@@ -1,3 +1,9 @@
 {
-    "python.terminal.activateEnvironment": true
+    "python.terminal.activateEnvironment": true,
+    "python.defaultInterpreterPath": "E:/Coding/DSB/.env1/Scripts/Python.exe",
+    "search.useGlobalIgnoreFiles": true,
+    "search.useParentIgnoreFiles": true,
+    "search.exclude": {
+        "**/.env1": true
+    }
 }
