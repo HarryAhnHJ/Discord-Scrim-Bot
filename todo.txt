@@ -1,11 +1,11 @@
-1. A player cannot queue into more than 1 spot per match
-2. If a player is in an active game, cannot queue
+1. A player cannot queue into more than 1 spot per match #done
+2. If a player is in an active game, cannot queue 
 3. Once 10 players are in match lobby (i.e. every role is filled in both teams), start game (move match to active matches list)
 4. Matchmaking by rank/elo
     Temporary solution - ability to swap the two players in same role
-5. Create unqueue
+5. Create unqueue #done
 6. When a player signs up, save the data permanently
 
 *** getplayerids/getplayernames function bug
 
-7. clean up match/team functions
+7. clean up match/team functions #done
