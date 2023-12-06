@@ -30,6 +30,7 @@ async def start(ctx):
 
 '''
 Update & Send the currently active lobby as an discord embed
+If 
 '''
 async def update_queue_ui(ctx,stat:int):
 
