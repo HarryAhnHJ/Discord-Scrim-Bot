@@ -30,12 +30,8 @@ class Match:
         self.name = name
 
     def getname(self):
-        if self.name != "":
-            return self.name
-        else:
-            #produce error
-            print("Match name not set. Create a name first.")
-    
+        return self.name
+
     def getblue(self):
         return self.blue
     
@@ -44,6 +40,13 @@ class Match:
 
     def getfullrosters(self):
         return self.getblue().getteamplayers() + self.getred().getteamplayers()
+    
+    def getfullrostersnames(self):
+        players = self.getfullrosters()
+        player_names = []
+        for player in players:
+            player_names.append(player.getplayername())
+        return player_names
 
     def remove_player_from_match(self, playerid):
         self.blue.removeplayer(playerid)
@@ -90,12 +93,15 @@ class Team:
         setattr(self, role, player)
 
     def removeplayer(self, playerid):
+        print(f'Players in team {self.getteamname()}: ')
         for player in self.players:
             if player.getplayerid() == playerid:
+                print(f'Found player to remove: {player.getplayername()}')
                 player.setplayerid("")
                 player.setplayername("")
                 player.setplayerrank(0)
                 player.setplayerelo(0)
+
 
 
 '''

@@ -60,8 +60,13 @@ Game will start if there are 2 people in each of the 5 roles.
 @bot.command(name="queue")
 async def queue_role(ctx, msgrole):
 
+    if bot.active_lobby.getname() == "":
+        await ctx.send('Error: Queue has not started yet.')
+        return
+
     if is_proper_role(msgrole) == False:
         await ctx.send('Error: Invalid role')
+        return
         
     team_blue = bot.active_lobby.getblue()
     team_red = bot.active_lobby.getred()
@@ -142,15 +147,19 @@ async def unqueue(ctx):
     if findplayer(dq_player_id,bot.active_lobby.getfullrosters()) == False:
         await ctx.send(f'Not currency in main lobby.. Could be waitlisted?')
     else:
+        print(bot.active_lobby.getfullrostersnames())
         bot.active_lobby.remove_player_from_match(dq_player_id)
         await ctx.send(f'You have been removed from queue')
+        await update_queue_ui(ctx,1)
+        print(bot.active_lobby.getfullrostersnames())
         return
 
     if findplayer(dq_player_id, datab.waitlist_players) == False:
         await ctx.send(f'You are not in queue.')
     else:
         datab.waitlist_players.remove_player_from_match(dq_player_id)
-        await ctx.send(f'You have been removed from queue')
+        await ctx.send(f'You have been removed from the waitlist')
+        await update_queue_ui(ctx,1)
         return
 
 
