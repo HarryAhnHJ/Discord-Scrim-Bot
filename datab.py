@@ -19,3 +19,9 @@ all_players=list([match.Player()])
 '''
 List of active matches - if a player if in any of these matches, they cannot queue
 '''
+
+
+'''
+List of playerids that have accepted incoming found match
+'''
+accepted_players = []

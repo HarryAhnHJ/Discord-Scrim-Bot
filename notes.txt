@@ -1,0 +1,8 @@
+Functions getplayerids/getplayernames from class Team() bug - functions have been removed
+    This is because the functions return static list
+***
+await interaction.response.send_message(content=content, ephemeral=True)
+    this is to make bot responses private
+
+await ctx.message.delete()
+    delete user commands after it goes through
