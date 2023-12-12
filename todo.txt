@@ -18,6 +18,8 @@ When a player signs up, save the data permanently - in a json?
 
 Clean up class functions
 
+Bot response messages - make some of them private
+
 
 
 

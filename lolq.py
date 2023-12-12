@@ -8,11 +8,19 @@ from collections import deque
 import datab
 import random
 
+'''
+Bot
+'''
 intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix='!', intents=intents)
 
 bot.active_lobby = match.Match()
+
+load_dotenv(Path("E:\Coding\DSB\.env"))
+token = os.getenv("bcsbot_token")
+bot.run(token)
+
 
 '''
 To run when bot starts AND 
@@ -126,8 +134,9 @@ Player who was pinged by bot that match was found, can decline with this command
 '''
 @bot.command(name="decline")
 async def decline_match(ctx):
+    await ctx.send(f'A player has decilned the match. Going back to queue...')
     # apply_penalty(ctx)
-    await update_queue_ui(ctx,3)
+    await unqueue(ctx)
 
 
 '''
@@ -154,7 +163,6 @@ async def start_game(ctx):
     await ctx.send(f'<@{str(player_make_lobby)}> You are responsible this game for creating the lobby and inviting the other players.')
 
 
-
 '''
 For players to put themselves in queue
 Players are only able to queue into 1 role at a time (for now)
@@ -163,7 +171,7 @@ Game will start if there are 2 people in each of the 5 roles.
 @bot.command(name="queue")
 async def queue_role(ctx, msgrole):
     if bot.active_lobby.getname() == "":
-        await ctx.send('Error: Queue has not started yet.')
+        await ctx.send(content='Error: Queue has not started yet.',ephemeral=True)
         return
     if is_proper_role(msgrole) == False:
         await ctx.send('Error: Invalid role')
@@ -261,7 +269,7 @@ async def unqueue(ctx):
 
     dq_player_id = str(ctx.message.author.id) 
 
-    await ctx.send('Removing you from the queue...')
+    # await ctx.send('Removing you from the queue...')
     if findplayer(dq_player_id,bot.active_lobby.getfullrosters()) == False:
         await ctx.send(f'Not currency in main lobby.. Could be waitlisted?')
     else:
@@ -291,7 +299,7 @@ async def winning_team(ctx, won_team):
     #should be able to send error if input is not blue or red, and in future give points to winning team players
 
 
-load_dotenv(Path("E:\Coding\DSB\.env"))
-token = os.getenv("bcsbot_token")
-bot.run(token)
+
+
+
 
