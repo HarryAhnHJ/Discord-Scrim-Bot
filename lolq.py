@@ -61,6 +61,18 @@ async def sign_up(ctx,msgrank):
 
 
 '''
+sub-function: given player id, find player info. If player is not signed up, return False
+'''
+def findplayer(id:str,players: list[match.Player()]):
+    for player in players:
+        if player.getplayerid() == id:
+            return player
+        else:
+            continue
+    return False
+
+
+'''
 Update & Send the currently active lobby as an discord embed
 Sends signal to check if lobby is full. If full, start match
 '''
@@ -102,7 +114,7 @@ async def update_queue_ui(ctx,stat:int):
             await start_game(ctx)
         return
     if al.ismatchfull():
-        await ctx.send("Full lobby! Game starting soon...")
+        await ctx.send(f"Full lobby! Game starting soon...")
         await full_match_found(ctx)
 
 
@@ -132,12 +144,12 @@ Update match found embed
 @bot.command(name="accept")
 async def accept_match(ctx):
     playerid = str(ctx.message.author.id)
-    if findplayer(playerid,bot.active_lobby.getfullrostersids()) != False:
-        datab.accepted_players.append(str(ctx.message.author.id))
+    if findplayer(playerid,bot.active_lobby.getfullrosters()) != False:
+        datab.accepted_players.append(playerid)
         await ctx.send('You have accepted the match.', ephemeral=True)
         await update_queue_ui(ctx,3)
     else:
-        await ctx.send(f'You're not even in queue!!! stfu!!')
+        await ctx.send('You're not even in the match!)
         
 
 
@@ -170,12 +182,13 @@ async def start_game(ctx):
                          inline=True)
     al.startmatch_ui_msg = await ctx.send(embed=al.startmatch_ui)
 
-    all_players_id = bot.active_lobby.getfullrostersids()
-
+    all_players = bot.active_lobby.getfullrosters()
+    
     #adds playerids to indicate they are now in active game
-    datab.in_game_players.append(all_players_id)
+    datab.in_game_players.append(all_players)
 
-    playerid_make_lobby = random.choice(all_players_id)
+    random_player = random.choice(all_players)
+    playerid_make_lobby = random_player.getplayerid()
 
     await ctx.send(f'<@{str(playerid_make_lobby)}> You are responsible this game for creating the lobby and inviting the other players.')
 
@@ -233,18 +246,6 @@ async def queue_role(ctx, msgrole):
         datab.waitlist_players.append(curr_player)
         await ctx.send(f'Current queue has no availble spots for {msgrole.lower()}. You have been added to the waitlist.',ephemeral=True)
     await update_queue_ui(ctx,1)
-
-
-'''
-sub-function: given player id, find player info. If player is not signed up, return False
-'''
-def findplayer(id:str,players: list[match.Player]):
-    for player in players:
-        if player.getplayerid() == id:
-            return player
-        else:
-            continue
-    return False
 
 
 '''
