@@ -70,13 +70,18 @@ async def update_queue_ui(ctx,stat:int):
 
     al.ui = discord.Embed(title=f"__**Lobby {al.getname()}:**__",color=0x03f8fc,
                                description="Type '!queue [role]' to queue into the game!")
-    al.ui.add_field(name=f'**Blue Team**',
-                         value=f'Top:  {al.blue.top.name}\nJng:   {al.blue.jng.name}\nMid:  {al.blue.mid.name}\nBot:  {al.blue.bot.name}\nSup:  {al.blue.sup.name}',
-                         inline=True)
-    al.ui.add_field(name=f'**Red Team**',
-                         value=f'Top:  {al.red.top.name}\nJng:   {al.red.jng.name}\nMid:  {al.red.mid.name}\nBot:  {al.red.bot.name}\nSup:  {al.red.sup.name}',
-                         inline=True)
-    
+    # al.ui.add_field(name=f'**Blue Team**',
+    #                      value=f'Top:  {al.blue.top.name}\nJng:   {al.blue.jng.name}\nMid:  {al.blue.mid.name}\nBot:  {al.blue.bot.name}\nSup:  {al.blue.sup.name}',
+    #                      inline=True)
+    # al.ui.add_field(name=f'**Red Team**',
+    #                      value=f'Top:  {al.red.top.name}\nJng:   {al.red.jng.name}\nMid:  {al.red.mid.name}\nBot:  {al.red.bot.name}\nSup:  {al.red.sup.name}',
+    #                      inline=True)
+    al.ui.add_field(name="Top",value=f'> {al.blue.top.getplayername()}\n> {al.red.top.getplayername()}',inline=True)
+    al.ui.add_field(name="Jng",value=f'> {al.blue.jng.getplayername()}\n> {al.red.jng.getplayername()}',inline=True)
+    al.ui.add_field(name="Mid",value=f'> {al.blue.mid.getplayername()}\n> {al.red.mid.getplayername()}',inline=True)
+    al.ui.add_field(name="Bot",value=f'> {al.blue.bot.getplayername()}\n> {al.red.bot.getplayername()}',inline=True)
+    al.ui.add_field(name="Sup",value=f'> {al.blue.sup.getplayername()}\n> {al.red.sup.getplayername()}',inline=True)
+
     al.matchfound_ui = discord.Embed(title=f"__**Lobby {al.getname()}: MATCH FOUND**__",color=0x03f8fc,
                                description="Type '!accept' to accept the match!")
     numplayers_waiting = len(al.getfullrosters()) - len(datab.accepted_players)
@@ -93,6 +98,7 @@ async def update_queue_ui(ctx,stat:int):
     elif stat == 3: #players accepted match
         await al.matchfound_ui_msg.edit(embed=al.matchfound_ui)
         if numplayers_waiting == 0:
+            await matchmake(ctx)
             await start_game(ctx)
         return
     if al.ismatchfull():
@@ -125,8 +131,14 @@ Update match found embed
 '''
 @bot.command(name="accept")
 async def accept_match(ctx):
-    datab.accepted_players.append(str(ctx.message.author.id))
-    await update_queue_ui(ctx,3)
+    playerid = str(ctx.message.author.id)
+    if findplayer(playerid,bot.active_lobby.getfullrostersids()) != False:
+        datab.accepted_players.append(str(ctx.message.author.id))
+        await ctx.send('You have accepted the match.', ephemeral=True)
+        await update_queue_ui(ctx,3)
+    else:
+        await ctx.send(f'You're not even in queue!!! stfu!!')
+        
 
 
 '''
@@ -134,6 +146,7 @@ Player who was pinged by bot that match was found, can decline with this command
 '''
 @bot.command(name="decline")
 async def decline_match(ctx):
+    await ctx.send('you have declined queue.',ephemeral=True)
     await ctx.send(f'A player has decilned the match. Going back to queue...')
     # apply_penalty(ctx)
     await unqueue(ctx)
@@ -158,9 +171,13 @@ async def start_game(ctx):
     al.startmatch_ui_msg = await ctx.send(embed=al.startmatch_ui)
 
     all_players_id = bot.active_lobby.getfullrostersids()
-    player_make_lobby = random.choice(all_players_id)
 
-    await ctx.send(f'<@{str(player_make_lobby)}> You are responsible this game for creating the lobby and inviting the other players.')
+    #adds playerids to indicate they are now in active game
+    datab.in_game_players.append(all_players_id)
+
+    playerid_make_lobby = random.choice(all_players_id)
+
+    await ctx.send(f'<@{str(playerid_make_lobby)}> You are responsible this game for creating the lobby and inviting the other players.')
 
 
 '''
@@ -170,12 +187,22 @@ Game will start if there are 2 people in each of the 5 roles.
 '''
 @bot.command(name="queue")
 async def queue_role(ctx, msgrole):
+    #match queue not started
     if bot.active_lobby.getname() == "":
-        await ctx.send(content='Error: Queue has not started yet.',ephemeral=True)
+        await ctx.send('Error: Queue has not started yet.',ephemeral=True)
         return
+    #proper role input not found
     if is_proper_role(msgrole) == False:
-        await ctx.send('Error: Invalid role')
+        await ctx.send('Error: Invalid role',ephemeral=True)
         return
+    #player has nog signed up yet
+    if findplayer(str(ctx.message.author.id),datab.all_players) == False:
+        await ctx.send("You are not signed up. Please sign up using '!signup [rank]'\nE.g. !signup Emerald 2 or !signup Masters",ephemeral=True)
+        return
+    #player is already in an active game. To officially end the game, use !win to declare winner
+    if findplayer(str(ctx.message.author.id),datab.in_game_players) != False:
+        await ctx.send("You are already in an active match! If your game ended, use !win to declare the winner", ephemeral=True)
+
     team_blue = bot.active_lobby.getblue()
     team_red = bot.active_lobby.getred()
     teams = [team_blue,team_red]
@@ -197,24 +224,14 @@ async def queue_role(ctx, msgrole):
     found_team = False
     for team in teams:
         if found_team == False:
-            if team.isfilled(msgrole.lower()):
-                continue
-            else:
-                ''' if player is in player database (list of just id for now), aka signed up using signup command
-                , then add the player to queue'''
+            if not team.isfilled(msgrole.lower()):
                 curr_player = findplayer(str(ctx.message.author.id),datab.all_players)
-                if curr_player == False:
-                    await ctx.send("Player is not signed up. Please sign up using '!signup [rank]'\nE.g. !signup Emerald 2 or !signup Masters")
-                    return
-                else:
-                    team.setplayerasrole(curr_player,msgrole)
-                    found_team = True
-                    await ctx.send(f'Successfully added to {team.getteamname()}')
-        else:
-            continue
+                team.setplayerasrole(curr_player,msgrole)
+                found_team = True
+                await ctx.send(f'Successfully added to {team.getteamname()}', ephemeral=True)
     if found_team == False:
         datab.waitlist_players.append(curr_player)
-        await ctx.send(f'Current queue has no availble spots for {msgrole.lower()}. You have been added to the waitlist.')
+        await ctx.send(f'Current queue has no availble spots for {msgrole.lower()}. You have been added to the waitlist.',ephemeral=True)
     await update_queue_ui(ctx,1)
 
 
@@ -271,21 +288,21 @@ async def unqueue(ctx):
 
     # await ctx.send('Removing you from the queue...')
     if findplayer(dq_player_id,bot.active_lobby.getfullrosters()) == False:
-        await ctx.send(f'Not currency in main lobby.. Could be waitlisted?')
+        print(f'Not currency in main lobby.. Could be waitlisted?')
     else:
         print(bot.active_lobby.getfullrostersnames())
         print(bot.active_lobby.getfullrostersids())
         bot.active_lobby.remove_player_from_match(dq_player_id)
-        await ctx.send(f'You have been removed from queue')
+        await ctx.send(f'You have been removed from queue',ephemeral=True)
         await update_queue_ui(ctx,1)
         print(bot.active_lobby.getfullrostersnames())
         print(bot.active_lobby.getfullrostersids())
         return
     if findplayer(dq_player_id, datab.waitlist_players) == False:
-        await ctx.send(f'You are not in queue.')
+        await ctx.send(f'You are not in queue.',ephemeral=True)
     else:
         datab.waitlist_players.remove_player_from_match(dq_player_id)
-        await ctx.send(f'You have been removed from the waitlist')
+        await ctx.send(f'You have been removed from the waitlist',ephemeral=True)
         await update_queue_ui(ctx,1)
         return
 
@@ -295,11 +312,19 @@ Set winning team
 '''
 @bot.command(name="win")
 async def winning_team(ctx, won_team):
+    if won_team.lower() != 'red' | won_team.lower() != 'blue':
+        ctx.send("Incorrect Input. Team should either be 'red' or 'blue'",ephemeral=True)
+        return
     bot.active_lobby.setwinningteam(won_team)
-    #should be able to send error if input is not blue or red, and in future give points to winning team players
 
 
-
+'''
+Called when a match is accepted by all 10 players
+Swaps players between teams to balance out players based on rank/in-house elo
+Stops when the teams are closest to balanced
+'''
+async def matchmake(ctx):
+    return
 
 
 
