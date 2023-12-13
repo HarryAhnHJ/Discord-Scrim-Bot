@@ -119,6 +119,44 @@ async def update_queue_ui(ctx,stat:int):
 
 
 '''
+Called when a match is accepted by all 10 players
+Swaps players between teams to balance out players based on rank/in-house elo
+Stops when the teams are closest to balanced
+'''
+async def matchmake(ctx):
+    return
+
+
+'''
+Shows final player Embed UI
+Randomly selects one player to create lobby and invite the 9 other players
+Tournament Code if available(?)
+'''
+async def start_game(ctx):
+
+    al = bot.active_lobby
+    al.startmatch_ui = discord.Embed(title=f"__**Lobby {al.getname()}:**__",color=0x03f8fc,
+                               description="Match Accepted! Enjoy the game!")
+    al.startmatch_ui.add_field(name=f'**Blue Team**',
+                         value=f'Top:  {al.blue.top.name}\nJng:   {al.blue.jng.name}\nMid:  {al.blue.mid.name}\nBot:  {al.blue.bot.name}\nSup:  {al.blue.sup.name}',
+                         inline=True)
+    al.startmatch_ui.add_field(name=f'**Red Team**',
+                         value=f'Top:  {al.red.top.name}\nJng:   {al.red.jng.name}\nMid:  {al.red.mid.name}\nBot:  {al.red.bot.name}\nSup:  {al.red.sup.name}',
+                         inline=True)
+    al.startmatch_ui_msg = await ctx.send(embed=al.startmatch_ui)
+
+    all_players = bot.active_lobby.getfullrosters()
+    
+    #adds playerids to indicate they are now in active game
+    datab.in_game_players.append(all_players)
+
+    random_player = random.choice(all_players)
+    playerid_make_lobby = random_player.getplayerid()
+
+    await ctx.send(f'<@{str(playerid_make_lobby)}> You are responsible this game for creating the lobby and inviting the other players.')
+
+
+'''
 Starts the match. Pings all players in the match. 
 If at least one player does not accept (react?) within x seconds, match returns to lobby (queue). 
 The player(s) who did not accept will be removed and disallowed to queue again for y minutes. 
@@ -152,7 +190,6 @@ async def accept_match(ctx):
         await ctx.send('You're not even in the match!)
         
 
-
 '''
 Player who was pinged by bot that match was found, can decline with this command
 '''
@@ -162,35 +199,6 @@ async def decline_match(ctx):
     await ctx.send(f'A player has decilned the match. Going back to queue...')
     # apply_penalty(ctx)
     await unqueue(ctx)
-
-
-'''
-Shows final player Embed UI
-Randomly selects one player to create lobby and invite the 9 other players
-Tournament Code if available(?)
-'''
-async def start_game(ctx):
-
-    al = bot.active_lobby
-    al.startmatch_ui = discord.Embed(title=f"__**Lobby {al.getname()}:**__",color=0x03f8fc,
-                               description="Match Accepted! Enjoy the game!")
-    al.startmatch_ui.add_field(name=f'**Blue Team**',
-                         value=f'Top:  {al.blue.top.name}\nJng:   {al.blue.jng.name}\nMid:  {al.blue.mid.name}\nBot:  {al.blue.bot.name}\nSup:  {al.blue.sup.name}',
-                         inline=True)
-    al.startmatch_ui.add_field(name=f'**Red Team**',
-                         value=f'Top:  {al.red.top.name}\nJng:   {al.red.jng.name}\nMid:  {al.red.mid.name}\nBot:  {al.red.bot.name}\nSup:  {al.red.sup.name}',
-                         inline=True)
-    al.startmatch_ui_msg = await ctx.send(embed=al.startmatch_ui)
-
-    all_players = bot.active_lobby.getfullrosters()
-    
-    #adds playerids to indicate they are now in active game
-    datab.in_game_players.append(all_players)
-
-    random_player = random.choice(all_players)
-    playerid_make_lobby = random_player.getplayerid()
-
-    await ctx.send(f'<@{str(playerid_make_lobby)}> You are responsible this game for creating the lobby and inviting the other players.')
 
 
 '''
@@ -319,13 +327,6 @@ async def winning_team(ctx, won_team):
     bot.active_lobby.setwinningteam(won_team)
 
 
-'''
-Called when a match is accepted by all 10 players
-Swaps players between teams to balance out players based on rank/in-house elo
-Stops when the teams are closest to balanced
-'''
-async def matchmake(ctx):
-    return
 
 
 
