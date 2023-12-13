@@ -12,7 +12,7 @@ waitlist_players = []
 '''
 Temporary database for all players in the server
 '''
-all_players=list([match.Player()])
+all_players=list([])
 
 
 '''
@@ -23,10 +23,10 @@ List of active matches - if a player if in any of these matches, they cannot que
 '''
 List of active playerids
 '''
-in_game_players = list([str])
+in_game_players = list([])
 
 
 '''
 List of playerids that have accepted incoming found match
 '''
-accepted_players = list([str])
+accepted_players = list([])

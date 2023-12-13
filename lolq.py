@@ -17,11 +17,6 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 
 bot.active_lobby = match.Match()
 
-load_dotenv(Path("E:\Coding\DSB\.env"))
-token = os.getenv("bcsbot_token")
-bot.run(token)
-
-
 '''
 To run when bot starts AND 
 When !start command is made AND 
@@ -88,11 +83,11 @@ async def update_queue_ui(ctx,stat:int):
     # al.ui.add_field(name=f'**Red Team**',
     #                      value=f'Top:  {al.red.top.name}\nJng:   {al.red.jng.name}\nMid:  {al.red.mid.name}\nBot:  {al.red.bot.name}\nSup:  {al.red.sup.name}',
     #                      inline=True)
-    al.ui.add_field(name="Top",value=f'> {al.blue.top.getplayername()}\n> {al.red.top.getplayername()}',inline=True)
-    al.ui.add_field(name="Jng",value=f'> {al.blue.jng.getplayername()}\n> {al.red.jng.getplayername()}',inline=True)
-    al.ui.add_field(name="Mid",value=f'> {al.blue.mid.getplayername()}\n> {al.red.mid.getplayername()}',inline=True)
-    al.ui.add_field(name="Bot",value=f'> {al.blue.bot.getplayername()}\n> {al.red.bot.getplayername()}',inline=True)
-    al.ui.add_field(name="Sup",value=f'> {al.blue.sup.getplayername()}\n> {al.red.sup.getplayername()}',inline=True)
+    al.ui.add_field(name="Top",value=f'{al.blue.top.getplayername()}\n {al.red.top.getplayername()}',inline=True)
+    al.ui.add_field(name="Jng",value=f'{al.blue.jng.getplayername()}\n {al.red.jng.getplayername()}',inline=True)
+    al.ui.add_field(name="Mid",value=f'{al.blue.mid.getplayername()}\n {al.red.mid.getplayername()}',inline=True)
+    al.ui.add_field(name="Bot",value=f'{al.blue.bot.getplayername()}\n {al.red.bot.getplayername()}',inline=True)
+    al.ui.add_field(name="Sup",value=f'{al.blue.sup.getplayername()}\n {al.red.sup.getplayername()}',inline=True)
 
     al.matchfound_ui = discord.Embed(title=f"__**Lobby {al.getname()}: MATCH FOUND**__",color=0x03f8fc,
                                description="Type '!accept' to accept the match!")
@@ -124,6 +119,7 @@ Swaps players between teams to balance out players based on rank/in-house elo
 Stops when the teams are closest to balanced
 '''
 async def matchmake(ctx):
+    #swap around players
     return
 
 
@@ -133,7 +129,6 @@ Randomly selects one player to create lobby and invite the 9 other players
 Tournament Code if available(?)
 '''
 async def start_game(ctx):
-
     al = bot.active_lobby
     al.startmatch_ui = discord.Embed(title=f"__**Lobby {al.getname()}:**__",color=0x03f8fc,
                                description="Match Accepted! Enjoy the game!")
@@ -187,7 +182,7 @@ async def accept_match(ctx):
         await ctx.send('You have accepted the match.', ephemeral=True)
         await update_queue_ui(ctx,3)
     else:
-        await ctx.send('You're not even in the match!)
+        await ctx.send(f'You are not even in the match!!')
         
 
 '''
@@ -327,6 +322,8 @@ async def winning_team(ctx, won_team):
     bot.active_lobby.setwinningteam(won_team)
 
 
-
+load_dotenv(Path("E:\Coding\DSB\.env"))
+token = os.getenv("bcsbot_token")
+bot.run(token)
 
 
