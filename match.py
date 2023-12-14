@@ -10,7 +10,6 @@ Also has a Discord Embed and Message representing the match.
 class Match:
 
     def __init__(self):
-        
         self.name = ""
         self.blue = Team("Blue")
         self.red = Team("Red")
@@ -69,6 +68,11 @@ class Match:
             return True
         else:
             return False
+        
+    def swapplayers(self,role: str):
+        temp_player = getattr(self.blue,role)
+        self.blue.setplayerasrole(getattr(self.red,role),role)
+        self.red.setplayerasrole(temp_player,role)
 
 '''
 A single team in LoL
@@ -113,9 +117,9 @@ class Team:
         print(self.getteamplayers())
         for player in self.getteamplayers():
             if player.getplayerid() == playerid:
-                print(f'Found player to remove: {player.getplayername()}')
+                print(f'Found player to remove: {player.getplayerign()}')
                 player.setplayerid("")
-                player.setplayername("")
+                player.setplayerign("")
                 player.setplayerrank(0)
                 player.setplayerelo(0)
 
@@ -131,16 +135,16 @@ class Player:
 
     def __init__(self):
         
-        self.id = ""
-        self.name = ""
-        self.rank = 0 #Tier + Division
-        self.inhouseelo = 0
+        self.id = "" #discord id
+        self.ign = "" #league ign
+        self.rank = 0 #Tier + Division in solq
+        self.inhouseelo = 0  #gains points after every match
 
     def getplayerid(self):
         return self.id
     
-    def getplayername(self):
-        return self.name
+    def getplayerign(self):
+        return self.ign
     
     def getplayerrank(self):
         return self.rank
@@ -151,8 +155,8 @@ class Player:
     def setplayerid(self,id):
         self.id = id
 
-    def setplayername(self,name:str):
-        self.name = name
+    def setplayerign(self,name:str):
+        self.ign = name
 
     def setplayerrank(self,rank:int):
         self.rank = rank

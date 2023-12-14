@@ -7,6 +7,8 @@ from pathlib import Path
 from collections import deque
 import datab
 import random
+import json
+import riotapi
 
 '''
 Bot
@@ -37,18 +39,19 @@ Registers player to be able to queue.
 Either to be reset every day or permanently stored unless they leave the server, or banned
 '''
 @bot.command(name="signup")
-async def sign_up(ctx,msgrank):
+async def sign_up(ctx,ign,msgrank):
 
     await ctx.send('Adding you as a player...')
 
     playerid = str(ctx.message.author.id)
-    playername = str(ctx.message.author.name) #author name is discord username, NOT server nickname
+    playerign = str(ign) #author name is discord username, NOT server nickname
     playerrank = str(msgrank).lower().replace(" ","")
 
     newplayer = match.Player()
     newplayer.setplayerid(playerid)
-    newplayer.setplayername(playername)
+    newplayer.setplayername(playerign)
     newplayer.setplayerrank(playerrank)
+    newplayer.setplayerloe(0)
 
     datab.all_players.append(newplayer)
 
@@ -83,15 +86,15 @@ async def update_queue_ui(ctx,stat:int):
     # al.ui.add_field(name=f'**Red Team**',
     #                      value=f'Top:  {al.red.top.name}\nJng:   {al.red.jng.name}\nMid:  {al.red.mid.name}\nBot:  {al.red.bot.name}\nSup:  {al.red.sup.name}',
     #                      inline=True)
-    al.ui.add_field(name="Top",value=f'{al.blue.top.getplayername()}\n {al.red.top.getplayername()}',inline=True)
-    al.ui.add_field(name="Jng",value=f'{al.blue.jng.getplayername()}\n {al.red.jng.getplayername()}',inline=True)
-    al.ui.add_field(name="Mid",value=f'{al.blue.mid.getplayername()}\n {al.red.mid.getplayername()}',inline=True)
-    al.ui.add_field(name="Bot",value=f'{al.blue.bot.getplayername()}\n {al.red.bot.getplayername()}',inline=True)
-    al.ui.add_field(name="Sup",value=f'{al.blue.sup.getplayername()}\n {al.red.sup.getplayername()}',inline=True)
+    al.ui.add_field(name="Top",value=f'{al.blue.top.getplayerign()}\n {al.red.top.getplayerign()}',inline=True)
+    al.ui.add_field(name="Jng",value=f'{al.blue.jng.getplayerign()}\n {al.red.jng.getplayerign()}',inline=True)
+    al.ui.add_field(name="Mid",value=f'{al.blue.mid.getplayerign()}\n {al.red.mid.getplayerign()}',inline=True)
+    al.ui.add_field(name="Bot",value=f'{al.blue.bot.getplayerign()}\n {al.red.bot.getplayerign()}',inline=True)
+    al.ui.add_field(name="Sup",value=f'{al.blue.sup.getplayerign()}\n {al.red.sup.getplayerign()}',inline=True)
 
     al.matchfound_ui = discord.Embed(title=f"__**Lobby {al.getname()}: MATCH FOUND**__",color=0x03f8fc,
                                description="Type '!accept' to accept the match!")
-    numplayers_waiting = len(al.getfullrosters()) - len(datab.accepted_players)
+    numplayers_waiting = len(al.getfullrosters()) - len(datab.accepted_players) + 1 #?? why +1
     al.matchfound_ui.add_field(name=f'**Number of players we are waiting for:',
                                value = f'{str(numplayers_waiting)}',
                                inline=True)
@@ -108,7 +111,7 @@ async def update_queue_ui(ctx,stat:int):
             await matchmake(ctx)
             await start_game(ctx)
         return
-    if al.ismatchfull():
+    if al.ismatchfull(): 
         await ctx.send(f"Full lobby! Game starting soon...")
         await full_match_found(ctx)
 
@@ -119,7 +122,7 @@ Swaps players between teams to balance out players based on rank/in-house elo
 Stops when the teams are closest to balanced
 '''
 async def matchmake(ctx):
-    #swap around players
+    #swap around players based on rank/elo... to be implemented
     return
 
 
@@ -133,10 +136,10 @@ async def start_game(ctx):
     al.startmatch_ui = discord.Embed(title=f"__**Lobby {al.getname()}:**__",color=0x03f8fc,
                                description="Match Accepted! Enjoy the game!")
     al.startmatch_ui.add_field(name=f'**Blue Team**',
-                         value=f'Top:  {al.blue.top.name}\nJng:   {al.blue.jng.name}\nMid:  {al.blue.mid.name}\nBot:  {al.blue.bot.name}\nSup:  {al.blue.sup.name}',
+                         value=f'Top:  {al.blue.top.getplayerign()}\nJng:   {al.blue.jng.getplayerign()}\nMid:  {al.blue.mid.getplayerign()}\nBot:  {al.blue.bot.getplayerign()}\nSup:  {al.blue.sup.getplayerign()}',
                          inline=True)
     al.startmatch_ui.add_field(name=f'**Red Team**',
-                         value=f'Top:  {al.red.top.name}\nJng:   {al.red.jng.name}\nMid:  {al.red.mid.name}\nBot:  {al.red.bot.name}\nSup:  {al.red.sup.name}',
+                         value=f'Top:  {al.red.top.getplayerign()}\nJng:   {al.red.jng.getplayerign()}\nMid:  {al.red.mid.getplayerign()}\nBot:  {al.red.bot.getplayerign()}\nSup:  {al.red.sup.getplayerign()}',
                          inline=True)
     al.startmatch_ui_msg = await ctx.send(embed=al.startmatch_ui)
 

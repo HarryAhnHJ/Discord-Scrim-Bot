@@ -21,6 +21,9 @@ Implement !win command
     ***
     Clean up class functions
 
+Figure out a way to verify signup ign
+    connect to riot api?
+
 
 Bot response messages - make some of them private
     ephemeral=True

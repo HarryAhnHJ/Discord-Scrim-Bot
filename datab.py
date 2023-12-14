@@ -1,6 +1,8 @@
 import match
 from collections import deque
 import discord
+import mysql.connector
+
 
 
 '''
@@ -30,3 +32,9 @@ in_game_players = list([])
 List of playerids that have accepted incoming found match
 '''
 accepted_players = list([])
+
+mydb = mysql.connector.connect(
+    host="localhost",
+    user="soulblue",
+    password="mypw"
+)
