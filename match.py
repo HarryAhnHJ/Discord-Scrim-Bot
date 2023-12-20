@@ -53,6 +53,9 @@ class Match:
         for player in players:
             player_ids.append(player.getplayerid())
         return player_ids
+    
+    def getwteam(self):
+        return self.wteam
 
     def remove_player_from_match(self, playerid):
         self.blue.removeplayer(playerid)
@@ -74,6 +77,7 @@ class Match:
         self.blue.setplayerasrole(getattr(self.red,role),role)
         self.red.setplayerasrole(temp_player,role)
 
+
 '''
 A single team in LoL
 Has 1 Player in each of the 5 roles
@@ -93,7 +97,7 @@ class Team:
     Checks if the specified role is filled by a player
     '''
     def isfilled(self,role:str):
-        if getattr(self,role).name != "":
+        if getattr(self,role).getplayerign() != "":
             return True
         else:
             return False
@@ -114,22 +118,21 @@ class Team:
         setattr(self, role, player)
 
     def removeplayer(self, playerid):
-        print(self.getteamplayers())
+        # print(self.getteamplayers())
         for player in self.getteamplayers():
             if player.getplayerid() == playerid:
-                print(f'Found player to remove: {player.getplayerign()}')
+                # print(f'Found player to remove: {player.getplayerign()}')
                 player.setplayerid("")
                 player.setplayerign("")
                 player.setplayerrank(0)
                 player.setplayerelo(0)
 
 
-
 '''
 Representing a single palyer
 Has name (discord name) and rank, which is a point based on lol rank/division
 *A player cannot play another game until their last game has been declared finished* (To be implemented later)
-Each player has a unique (discord) id that is identified with, in case their name changes (To be implemented later)
+Each player has a unique (discord) id that is identified with, in case their name changes 
 '''
 class Player:
 

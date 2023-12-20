@@ -1,9 +1,13 @@
 import match
 from collections import deque
 import discord
-import mysql.connector
+# import mysql.connector
 
+guild = 808907371715362856
+qchannel = 1114666837209264229
+echannel = 1114762534654845020
 
+my_id = 211524290103738369
 
 '''
 A player queue for those who are in queue but have not found team with corresponding empty role
@@ -33,8 +37,8 @@ List of playerids that have accepted incoming found match
 '''
 accepted_players = list([])
 
-mydb = mysql.connector.connect(
-    host="localhost",
-    user="soulblue",
-    password="mypw"
-)
+# mydb = mysql.connector.connect(
+#     host="localhost",
+#     user="soulblue",
+#     password="mypw"
+# )
