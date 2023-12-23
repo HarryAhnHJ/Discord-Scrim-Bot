@@ -58,8 +58,13 @@ class Match:
         return self.wteam
 
     def remove_player_from_match(self, playerid):
-        self.blue.removeplayer(playerid)
-        self.red.removeplayer(playerid)
+        if self.blue.removeplayer(playerid) != False:
+            return
+        else:
+            self.red.removeplayer(playerid)
+
+    def cntemptyspots(self): # counts the number of empty spots in queue
+        return self.blue.getnum_teamemptyspots() + self.red.getnum_teamemptyspots()
     
     def ismatchfull(self):
         all_players = self.getfullrosters()
@@ -117,16 +122,33 @@ class Team:
     def setplayerasrole(self,player,role):
         setattr(self, role, player)
 
+    '''
+    Playerid must match one of the roles' players. 
+    Replaces the player with new empty player (so that people can queue in it)
+    '''
     def removeplayer(self, playerid):
         # print(self.getteamplayers())
-        for player in self.getteamplayers():
-            if player.getplayerid() == playerid:
-                # print(f'Found player to remove: {player.getplayerign()}')
-                player.setplayerid("")
-                player.setplayerign("")
-                player.setplayerrank(0)
-                player.setplayerelo(0)
+        player = Player()
+        if self.top.getplayerid() == playerid:
+            self.top = player
+        elif self.jng.getplayerid() == playerid:
+            self.jng = player
+        elif self.mid.getplayerid() == playerid:
+            self.mid = player
+        elif self.bot.getplayerid() == playerid:
+            self.bot = player
+        elif self.sup.getplayerid() == playerid:
+            self.sup = player
+        else:
+            print("ERROR: COULD NOT REMOVE ANY PLAYER")
+            return False
 
+    def getnum_teamemptyspots(self):
+        n = 0   # number of empty spots
+        for player in self.getteamplayers():
+            if player.getplayerid() == "":
+                n += 1
+        return n
 
 '''
 Representing a single palyer

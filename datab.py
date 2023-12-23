@@ -33,9 +33,10 @@ in_game_players = list([])
 
 
 '''
-List of playerids that have accepted incoming found match
+List of playerids that have accepted & declined incoming found match
 '''
 accepted_players = list([])
+declined_players = list([])
 
 # mydb = mysql.connector.connect(
 #     host="localhost",
