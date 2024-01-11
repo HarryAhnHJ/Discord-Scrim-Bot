@@ -11,9 +11,9 @@ import traceback
 import logging
 import datab
 import match
-import riotapi
 import datetime
 import time
+import riotapi
 
 '''
 Bot
@@ -29,17 +29,33 @@ async def on_ready():
     bot.my_guild = await bot.fetch_guild(datab.guild)
     bot.index = 1 #indicating match number, 1 means first match of the day
     bot.lobbies = []
-
+    bot.timeout_float = 60.0
     '''
-    Qstatus shows the bot/queue's status
+    Qstatus shows the active queue's status
     -1 = queue has not started
-    0 = queue just started (no one queued yet) OR someone just declined from match found
+    0 = queue just started (no one queued yet) 
     1 = some people queued
     2 = match found
     3 = players accepting
-    4 = everyone accepted, game starting?
+    4 = some players decline/didn't respond, back to queue
+    5 = everyone accepted, game starting? (not necessary)
     '''
     bot.qstatus = -1
+    with open('players.json','r') as f:
+        try:
+            datab.all_players_dict = json.load(f)
+        except:
+            pass
+    
+    if len(datab.all_players_dict) != 0:
+        for playerdict in datab.all_players_dict:
+            player = match.Player()
+            player.setplayerid(playerdict.get("id"))
+            player.setplayerign(playerdict.get("ign"))
+            player.setplayerrank(playerdict.get("rank"))
+            player.setplayerelo(playerdict.get("elo"))
+            datab.all_players.append(player)
+    print(datab.all_players)
     print("bot ready.")
     
 
@@ -49,12 +65,26 @@ async def sync(ctx):
     if ctx.message.author.id == datab.my_id:
         bot.tree.clear_commands(guild=bot.my_guild)
         bot.tree.copy_global_to(guild=bot.my_guild)
-        await bot.tree.sync(guild=bot.my_guild)
-        await ctx.send('Command tree synced.') 
+        await bot.tree.sync(guild=None)
+        
+        await ctx.send('Command tree synced.',delete_after=5.0)
         # await bot.process_commands(ctx.message)
     else:
         await ctx.send('You must be the owner to use this command!')
+    await ctx.message.delete()
 
+@bot.tree.command(name="helpmepls")
+async def help(inter:discord.Interaction):
+    helpui = discord.Embed(title=f"__**Welcome to BCS Inhouses Testing!**__",color=0x03f8fc,
+                               description="Use these commands. More commands coming, TBA")
+    helpui.add_field(name="/signup [ign] [tagline]",value=f'Register to be able to queue for inhouses. Input your MAIN ACCOUNT IGN',inline=False)
+    helpui.add_field(name="/start",value=f'Start the queue. Just need one player to use this command',inline=False)
+    helpui.add_field(name="/queue [role]",value=f'Role is one of : Top, Jng, Mid, Bot, Sup',inline=False)
+    helpui.add_field(name="/unqueue",value=f'Unqueue from queue.',inline=False)
+    helpui.add_field(name="/accept",value=f'Accept a match found',inline=False)
+    helpui.add_field(name="/decline",value=f'Decline a match found',inline=False)
+    helpui.add_field(name="/win",value=f'Declare winning team after the match',inline=False)
+    await inter.response.send_message(embed=helpui)
 
 '''
 Runs when !start command is made AND 
@@ -77,7 +107,7 @@ async def start(inter: discord.Interaction):
         await update_queue_ui(inter)
     else:
         num_players = bot.active_lobby.cntemptyspots() # number of players that can be queued
-        await queue_from_waitlist(inter,num_players)
+        await queue_from_waitlist(inter)
         await update_queue_ui(inter)
 
 '''
@@ -85,19 +115,39 @@ Registers player to be able to queue.
 Either to be reset every day or permanently stored unless they leave the server, or banned
 '''
 @bot.tree.command(name="signup")
-async def sign_up(inter: discord.Interaction,lolign: str, msgrank: str):
-    # await channel.send('Adding you as a player...',ephemeral=True)
+async def sign_up(inter: discord.Interaction,lolign: str,tagline:str):
     playerid = str(inter.user.id)
-    playerign = str(lolign).lower().replace(" ","") #author name is discord username, NOT server nickname
-    playerrank = str(msgrank).lower().replace(" ","")
+    playerign = str(lolign).lower().replace(" ","") 
+    #elo is a fixed # at start
+
+    ss = riotapi.SauderStats()
+    print(playerign + tagline)
+    try:
+        rankinfo_list = ss.get_summoner_data(playerign,tagline)
+    except:
+        await inter.response.send_message(f'Error retrieving information from RiotAPI. Please contact an admin.',ephemeral=True)
+        logging.exception("message")
+        return
+    playerign_formatted = rankinfo_list[0] 
+    playerrank = rankinfo_list[1] + " " + rankinfo_list[2]
 
     newplayer = match.Player()
     newplayer.setplayerid(playerid)
-    newplayer.setplayerign(playerign)
+    newplayer.setplayerign(playerign_formatted)
     newplayer.setplayerrank(playerrank)
 
     datab.all_players.append(newplayer)
-    await inter.response.send_message(f'You have successfully signed up. Welcome!',ephemeral=True,delete_after=5)
+
+    player_dict = {"id" : playerid,
+                   "ign": playerign_formatted,
+                   "rank": playerrank,
+                   "elo" : newplayer.getplayerelo()} #elo is inhouse elo, NOT soloq
+    
+    datab.all_players_dict.append(player_dict)
+    save_new_players()
+
+    await inter.response.send_message(f'You have successfully signed up:\nIGN: {playerign_formatted}\nRank: {playerrank}',
+                                      ephemeral=True,delete_after=30)
 
 
 '''
@@ -120,17 +170,11 @@ async def update_queue_ui(inter: discord.Interaction):
     al = bot.active_lobby
     al.ui = discord.Embed(title=f"__**Lobby {al.getname()}:**__",color=0x03f8fc,
                                description="Type '!queue [role]' to queue into the game!")
-    # al.ui.add_field(name=f'**Blue Team**',
-    #                      value=f'Top:  {al.blue.top.name}\nJng:   {al.blue.jng.name}\nMid:  {al.blue.mid.name}\nBot:  {al.blue.bot.name}\nSup:  {al.blue.sup.name}',
-    #                      inline=True)
-    # al.ui.add_field(name=f'**Red Team**',
-    #                      value=f'Top:  {al.red.top.name}\nJng:   {al.red.jng.name}\nMid:  {al.red.mid.name}\nBot:  {al.red.bot.name}\nSup:  {al.red.sup.name}',
-    #                      inline=True)
-    al.ui.add_field(name="Top",value=f'{al.blue.top.getplayerign()}\n {al.red.top.getplayerign()}',inline=True)
-    al.ui.add_field(name="Jng",value=f'{al.blue.jng.getplayerign()}\n {al.red.jng.getplayerign()}',inline=True)
-    al.ui.add_field(name="Mid",value=f'{al.blue.mid.getplayerign()}\n {al.red.mid.getplayerign()}',inline=True)
-    al.ui.add_field(name="Bot",value=f'{al.blue.bot.getplayerign()}\n {al.red.bot.getplayerign()}',inline=True)
-    al.ui.add_field(name="Sup",value=f'{al.blue.sup.getplayerign()}\n {al.red.sup.getplayerign()}',inline=True)
+    al.ui.add_field(name="**Top**",value=f'{al.blue.top.getplayerign()}\n {al.red.top.getplayerign()}',inline=False)
+    al.ui.add_field(name="**Jng**",value=f'{al.blue.jng.getplayerign()}\n {al.red.jng.getplayerign()}',inline=False)
+    al.ui.add_field(name="**Mid**",value=f'{al.blue.mid.getplayerign()}\n {al.red.mid.getplayerign()}',inline=False)
+    al.ui.add_field(name="**Bot**",value=f'{al.blue.bot.getplayerign()}\n {al.red.bot.getplayerign()}',inline=False)
+    al.ui.add_field(name="**Sup**",value=f'{al.blue.sup.getplayerign()}\n {al.red.sup.getplayerign()}',inline=False)
 
     al.matchfound_ui = discord.Embed(title=f"__**Lobby {al.getname()}: MATCH FOUND**__",color=0x03f8fc,
                                description="Type '!accept' to accept the match!")
@@ -140,33 +184,40 @@ async def update_queue_ui(inter: discord.Interaction):
                                inline=True)
     if bot.qstatus == -1:
         await bot.qchannel.send(f'ERROR: Contact an admin.')
-
-    if bot.qstatus == 0: #initial
+    if bot.qstatus == 0: #initial queue start
         al.ui_msg = await bot.qchannel.send(embed=al.ui)
         bot.qstatus = 1
     elif bot.qstatus == 1: #someone queued
         await al.ui_msg.edit(embed=al.ui)
+        if al.ismatchfull():
+            await bot.qchannel.send(f"Full lobby! Game starting soon...")
+            await full_match_found(inter)
     elif bot.qstatus == 2: #match found
         al.matchfound_ui_msg = await bot.qchannel.send(embed=al.matchfound_ui)
         await wait_for_response(inter)
-        return
-    elif bot.qstatus == 3: #players accepted match (NOT ALL)
+    elif bot.qstatus == 3: #some players accepted queue
         await al.matchfound_ui_msg.edit(embed=al.matchfound_ui)
+        if len(datab.accepted_players) + len(datab.declined_players) == 10:
+            await bot.qchannel.send("All responses recorded.")
         if numplayers_waiting == 0:
             auto_matchmake(inter)
+            bot.qstatus = 5 #game start
             await start_game(inter)
-            return
-        if len(datab.accepted_players) + len(datab.declined_players) == 10:
-            datab.accepted_players.clear()
-            bot.qstatus = 0
-            await bot.qchannel.send(f'A player has declined the match. Going back to queue...')
-            queue_from_waitlist(inter)
-            update_queue_ui(inter)
-        return
-    if al.ismatchfull():
-        await bot.qchannel.send(f"Full lobby! Game starting soon...")
-        print('shouldnt be here???')
-        await full_match_found(inter)
+            save_new_players() #periodically save new players to the database (json)
+    elif bot.qstatus == 4: #someone declined, going back to queue
+        al.ui_msg = await bot.qchannel.send(embed=al.ui)
+        await queue_from_waitlist(inter)
+        if al.ismatchfull():
+            await bot.qchannel.send(f"Full lobby! Game starting soon...")
+            await full_match_found(inter)
+
+
+'''
+Save new players to json
+'''
+def save_new_players():
+    with open("players.json", "w") as f:
+        json.dump(datab.all_players_dict,f,indent=2)
 
 
 '''
@@ -175,8 +226,22 @@ Swaps players between teams to balance out players based on rank/in-house elo
 Stops when the teams are closest to balanced
 '''
 def auto_matchmake(inter: discord.Interaction):
-    #swap around players
+    #swap around players based on rank (for now)
+    # red_mmr = bot.active_lobby.getred().getteammmr()
+    # blue_mmr = bot.active_lobby.getblue().getteammmr()
+
+    # original_rank_diff = abs(blue_mmr - red_mmr)
+    # if original_rank_diff < 10:
+    #     return
+
+    # redteam = bot.active_lobby.getred()
+    # blueteam = bot.active_lobby.getblue()
+    # for role in ["top","jng","mid","bot","sup"]:
+    #     blueplayermmr = blueteam.getattr(role).getmmr()
+    #     redplayermmr = redteam.getattr(role).getmmr()
+    #     if 
     return
+        
 
 
 '''
@@ -216,7 +281,6 @@ If at least one player does not accept (react?) within x seconds, match returns 
 The player(s) who did not accept will be removed and disallowed to queue again for y minutes. 
 '''
 async def full_match_found(inter: discord.Interaction):
-    
     all_players_id = bot.active_lobby.getfullrostersids()
     ping_players = ""
 
@@ -224,14 +288,14 @@ async def full_match_found(inter: discord.Interaction):
         ping_player = "<@" + str(playerid) + ">"
         ping_players = ping_players + " " + ping_player
 
-    await bot.qchannel.send(f'''Match Found!\n{ping_players}\nType !accept to accept the queue, !decline to decline.
+    await bot.qchannel.send(f'''Match Found!\n{ping_players}\nType '/accept' to accept the queue, '/decline' to decline.
                    Note that declining too many times or not responding will time you out of queueing.''')
     bot.qstatus = 2
     await update_queue_ui(inter)
 
 
 '''
-Waits for either /accept or /decline. 
+Waits for either queue timer to run out OR for all players to respond with 'accept' or 'decline.
 If accept, go to /accept command func
 If decline, go to /decline command func
 If no response, go to /decline command func (90s timer)
@@ -249,24 +313,27 @@ async def wait_for_response(inter:discord.Interaction):
     # bot.qstatus = 0 #override qstatus = 1 from add_player_to_queue
     # await queue_from_waitlist(inter)
     # await update_queue_ui(inter)
-    await asyncio.sleep(15)
-    print('slept enough?')
     no_response = False
-    for player in bot.active_lobby.getfullrosters():
-        print('should be here')
-        if player.getplayerid() not in datab.accepted_players:
-            bot.active_lobby.remove_player_from_match(player.getplayerid())
-            no_response = True
-    if no_response:
+    def check(msg):
+        return msg.content == "All responses recorded." and msg.channel == bot.qchannel and msg.author.id == datab.bot_id
+    try:
+        msg = await bot.wait_for('message',timeout=bot.timeout_float,check=check) 
+    except asyncio.TimeoutError:
+        for player in bot.active_lobby.getfullrosters():
+            if player.getplayerid() not in datab.accepted_players:
+                print('should not be here if no accepts')
+                bot.active_lobby.remove_player_from_match(player.getplayerid())
         await bot.qchannel.send(f'Some players have failed to respond in time. Replacing them with players from the waitlist...')
         datab.accepted_players.clear()
-        bot.qstatus = 0
-        await queue_from_waitlist(inter)
+        bot.qstatus = 4
         await update_queue_ui(inter)
+    else:
+        print('Success!')
+        
 
 '''
-Player who was pinged by bot that match was found, can accept with this command
-Update match found embed
+Accepts the match found (player in lobby only)
+Update ui 
 '''
 @bot.tree.command(name="accept")
 async def accept_match(inter: discord.Interaction):
@@ -281,6 +348,7 @@ async def accept_match(inter: discord.Interaction):
     datab.accepted_players.append(playerid)
     await inter.response.send_message('You have accepted the match.', ephemeral=True,delete_after=3)
     bot.qstatus = 3
+    print('Total number of players responded: ' + str(len(datab.accepted_players) + len(datab.declined_players)))
     await update_queue_ui(inter)
 
 
@@ -301,6 +369,7 @@ async def decline_match(inter: discord.Interaction):
     
     await inter.response.send_message(f'You have declined queue. Penalties may apply.',ephemeral=True)
     datab.declined_players.append(playerid)
+    print('Total number of players responded: ' + str(len(datab.accepted_players) + len(datab.declined_players)))
     # apply_penalty(inter)
 
     # await bot.qchannel.send(f'Checking waitlist...')
@@ -428,6 +497,7 @@ async def add_player_to_queue(inter:discord.Interaction, userid:str,role:str,sta
         if stat == 0:
             await inter.response.send_message(f'Current queue has no availble spots for {role.lower()}. You have been added to the waitlist.',
                                               ephemeral=True)
+        bot.qstatus = 1
         return False
     bot.qstatus = 1
     
@@ -495,6 +565,7 @@ async def view_status(inter: discord.Interaction):
     else:
         await inter.response.send_message(f"You have not signed up for in-houses. Type '/signup [ign] [rank]' so you can join queue!",
                                           ephemeral=True)
+
 
 '''
 Set winning team

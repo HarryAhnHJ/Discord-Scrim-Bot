@@ -1,6 +1,7 @@
 import discord
 import asyncio
 import os
+import datab
 
 '''
 A single match in a scrim/in-house game. 
@@ -107,6 +108,9 @@ class Team:
         else:
             return False
         
+    # def getplayer(self,role:str):
+    #     return getattr(self,role)
+        
     def setteamname(self,name:str):
         self.name = name
 
@@ -149,12 +153,20 @@ class Team:
             if player.getplayerid() == "":
                 n += 1
         return n
+    
+    def getteammmr(self):
+        team_mmr = 0.0
+        for player in self.getteamplayers():
+            team_mmr += player.getmmr()
+        team_mmr = team_mmr / 5
+        return team_mmr
 
 '''
 Representing a single palyer
 Has name (discord name) and rank, which is a point based on lol rank/division
 *A player cannot play another game until their last game has been declared finished* (To be implemented later)
 Each player has a unique (discord) id that is identified with, in case their name changes 
+Elo is the points they gain from the inhouse games
 '''
 class Player:
 
@@ -188,6 +200,9 @@ class Player:
 
     def setplayerelo(self,elo:int):
         self.inhouseelo = elo
+
+    def getmmr(self):
+        return datab.rank_dict.get(self.rank)
 
 
 
