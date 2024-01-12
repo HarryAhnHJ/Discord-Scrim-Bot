@@ -128,25 +128,30 @@ async def sign_up(inter: discord.Interaction,lolign: str,tagline:str):
         await inter.response.send_message(f'Error retrieving information from RiotAPI. Please contact an admin.',ephemeral=True)
         logging.exception("message")
         return
-    playerign_formatted = rankinfo_list[0] 
-    playerrank = rankinfo_list[1] + " " + rankinfo_list[2]
+    
+    if len(rankinfo_list) == 0:
+        await inter.response.send_message(f'You are not ranked. Matchmaking may be unbalanced.')
+        playerrank = "UNRANKED"
+    else:
+        playerign = rankinfo_list[0] 
+        playerrank = rankinfo_list[1] + " " + rankinfo_list[2]
 
     newplayer = match.Player()
     newplayer.setplayerid(playerid)
-    newplayer.setplayerign(playerign_formatted)
     newplayer.setplayerrank(playerrank)
+    newplayer.setplayerign(playerign)
 
     datab.all_players.append(newplayer)
 
     player_dict = {"id" : playerid,
-                   "ign": playerign_formatted,
+                   "ign": playerign,
                    "rank": playerrank,
                    "elo" : newplayer.getplayerelo()} #elo is inhouse elo, NOT soloq
     
     datab.all_players_dict.append(player_dict)
     save_new_players()
 
-    await inter.response.send_message(f'You have successfully signed up:\nIGN: {playerign_formatted}\nRank: {playerrank}',
+    await inter.response.send_message(f'You have successfully signed up:\nIGN: {playerign}\nRank: {playerrank}',
                                       ephemeral=True,delete_after=30)
 
 
@@ -224,9 +229,9 @@ def save_new_players():
 Called when a match is accepted by all 10 players
 Swaps players between teams to balance out players based on rank/in-house elo
 Stops when the teams are closest to balanced
+This function should not do anything if some players are unranked AND have not played before
 '''
 def auto_matchmake(inter: discord.Interaction):
-    #swap around players based on rank (for now)
     # red_mmr = bot.active_lobby.getred().getteammmr()
     # blue_mmr = bot.active_lobby.getblue().getteammmr()
 
@@ -243,7 +248,6 @@ def auto_matchmake(inter: discord.Interaction):
     return
         
 
-
 '''
 Shows final player Embed UI
 Randomly selects one player to create lobby and invite the 9 other players
@@ -259,6 +263,13 @@ async def start_game(inter: discord.Interaction):
     al.startmatch_ui.add_field(name=f'**Red Team**',
                                value=f'Top:  {al.red.top.getplayerign()}\nJng:   {al.red.jng.getplayerign()}\nMid:  {al.red.mid.getplayerign()}\nBot:  {al.red.bot.getplayerign()}\nSup:  {al.red.sup.getplayerign()}',
                                inline=True)
+    al.startmatch_ui.add_field(name=f'Blue Team Multi',
+                               value=f"[link](www.op.gg/{al.blue.top.getplayerign()})",
+                               inline=False)
+    al.startmatch_ui.add_field(name=f'Red Team Multi',
+                               value=f"[link](www.op.gg)",
+                               inline=True)
+
     al.startmatch_ui_msg = await bot.qchannel.send(embed=al.startmatch_ui)
 
     all_players = bot.active_lobby.getfullrosters()

@@ -62,7 +62,10 @@ class SauderStats():
         rank_data = requests.get(self.platform_url + '/lol/league/v4/entries/by-summoner/' + self.my_summid, headers=self.header)
         print(rank_data)
         rank_data_json = rank_data.json()
-        print(rank_data_json)
+        print(rank_data_json) #this will return [] if not ranked (placements not complete)
+
+        if len(rank_data_json) == 0:
+            return []
 
         for jason in rank_data_json:
             print(jason)
