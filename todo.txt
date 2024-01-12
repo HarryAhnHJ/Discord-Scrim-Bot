@@ -18,6 +18,7 @@ MAJOR FIXES BEFORE BETA test
     - Finding rank using Riot API does not work if not enough ranked games (esp early in season 2024)
     - uses previous ign instead of Riot ign
     - check decline/unqueue
+    - uncomment out the matchmaking funciton
 
 
 
