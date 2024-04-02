@@ -5,13 +5,14 @@ import discord
 
 my_id = 211524290103738369
 bot_id = 1114637994327035986
-
+admins = [str(my_id),str(bot_id)]
 '''
 self_test
 '''
-guild = 808907371715362856
-qchannel = 1114666837209264229
-echannel = 1114762534654845020
+# guild = 808907371715362856
+# qchannel = 1114666837209264229
+# echannel = 1114762534654845020
+# gchannel = 1116776884345258184
 
 '''
 alpha-test
@@ -24,9 +25,10 @@ alpha-test
 '''
 main server
 '''
-# guild = 
-# qchannel = 
-# echannel = 
+guild = 936783882752262165
+qchannel = 1192955594383032340
+echannel = 1197846605869621288
+gchannel = 1192953434618478642
 
 '''
 A player queue for those who are in queue but have not found team with corresponding empty role
@@ -66,6 +68,7 @@ declined_players = list([])
 # )
 
 rank_dict = {
+    "UNRANKED" : 50,
     "PLATINUM IV" : 10,
     "PLATINUM III" : 11,
     "PLATINUM II" : 12,

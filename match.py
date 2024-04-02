@@ -14,7 +14,7 @@ class Match:
         self.name = ""
         self.blue = Team("Blue")
         self.red = Team("Red")
-        self.wteam = None
+        self.wteam = ""
         self.ui = discord.Embed()
         self.ui_msg  = discord.message
     
@@ -45,7 +45,7 @@ class Match:
         players = self.getfullrosters()
         player_names = []
         for player in players:
-            player_names.append(player.getplayername())
+            player_names.append(player.getplayerign())
         return player_names
     
     def getfullrostersids(self):
@@ -60,9 +60,11 @@ class Match:
 
     def remove_player_from_match(self, playerid):
         if self.blue.removeplayer(playerid) != False:
+            print('removed from blue')
             return
         else:
             self.red.removeplayer(playerid)
+            print('removed from red')
 
     def cntemptyspots(self): # counts the number of empty spots in queue
         return self.blue.getnum_teamemptyspots() + self.red.getnum_teamemptyspots()
@@ -94,7 +96,7 @@ class Team:
         
         self.name = name
         self.top = Player()
-        self.jng = Player()
+        self.jg = Player()
         self.mid = Player()
         self.bot = Player()
         self.sup = Player()
@@ -118,7 +120,7 @@ class Team:
         return self.name
 
     def getteamplayers(self):
-        return [self.top,self.jng,self.mid,self.bot,self.sup]
+        return [self.top,self.jg,self.mid,self.bot,self.sup]
 
     '''
     Sets specified player into specified role in the team
@@ -135,16 +137,21 @@ class Team:
         player = Player()
         if self.top.getplayerid() == playerid:
             self.top = player
-        elif self.jng.getplayerid() == playerid:
-            self.jng = player
+            return True
+        elif self.jg.getplayerid() == playerid:
+            self.jg = player
+            return True
         elif self.mid.getplayerid() == playerid:
             self.mid = player
+            return True
         elif self.bot.getplayerid() == playerid:
             self.bot = player
+            return True
         elif self.sup.getplayerid() == playerid:
             self.sup = player
+            return True
         else:
-            print("ERROR: COULD NOT REMOVE ANY PLAYER")
+            print("ERROR: Could not remove any player. Check the other team?")
             return False
 
     def getnum_teamemptyspots(self):
@@ -160,6 +167,13 @@ class Team:
             team_mmr += player.getmmr()
         team_mmr = team_mmr / 5
         return team_mmr
+    
+    def getteammulti(self):
+        url = "https://www.op.gg/multisearch/NA?summoners="
+        for player in self.getteamplayers():
+            url += player.getplayerign().replace(" ","+").replace("#","%23")
+            url += ","
+        return url
 
 '''
 Representing a single palyer
@@ -174,8 +188,8 @@ class Player:
         
         self.id = "" #discord id
         self.ign = "" #league ign
-        self.rank = 0 #Tier + Division in solq
-        self.inhouseelo = 0  #gains points after every match
+        self.rank = "" #Tier + Division in solq
+        self.inhouseelo = 1200  #gains points after every match
 
     def getplayerid(self):
         return self.id

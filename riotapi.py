@@ -44,28 +44,27 @@ class SauderStats():
     Uses Riot API to verify user information
     '''
     def get_summoner_data(self,summoner_name:str,tag:str):
-        print("got here")
         summoner_data = requests.get(self.region_url + '/riot/account/v1/accounts/by-riot-id/' + summoner_name + '/' + tag,
         headers=self.header)
-        print(summoner_data)
+        # print(summoner_data)
         summoner_data_json = summoner_data.json()
-        print(summoner_data_json)
+        # print(summoner_data_json)
         self.my_puuid = summoner_data_json.get('puuid')
         
 
         puuid_data = requests.get(self.platform_url + '/lol/summoner/v4/summoners/by-puuid/' + self.my_puuid, headers=self.header)
-        print(puuid_data)
+        
         puuid_data_json = puuid_data.json()
-        print(puuid_data_json)
+        # print(puuid_data_json)
         self.my_summid = puuid_data_json.get('id')
 
         rank_data = requests.get(self.platform_url + '/lol/league/v4/entries/by-summoner/' + self.my_summid, headers=self.header)
-        print(rank_data)
+        # print(rank_data)
         rank_data_json = rank_data.json()
         print(rank_data_json) #this will return [] if not ranked (placements not complete)
 
         if len(rank_data_json) == 0:
-            return []
+            return False
 
         for jason in rank_data_json:
             print(jason)
@@ -75,7 +74,10 @@ class SauderStats():
                 name = jason.get('summonerName')
                 print("do we ever get here?")
                 #["UBC Sauder", "DIAMOND","III"]
-                return [name,rank,division]
+                return [name + '#'  + tag,rank,division]
+            else:
+                continue
+        return []
         # print('Name: ' + summoner_data_json['name'] + '\n' + 
         #       'Level: ' + str(summoner_data_json['summonerLevel']) + '\n' + 
         #       'Rank: ' +  rank

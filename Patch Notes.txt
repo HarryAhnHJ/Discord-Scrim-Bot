@@ -1,0 +1,24 @@
+EDGE CASES FOR UNQUEUE/DECLINE/waitlist_queue
+    - first person to respond to match found declines
+    - couple people accept, then one declines
+    - queue from waitlist (remove the player from the waitlist?)
+
+Matchmaking by rank/elo
+    Temporary solution - implemented ability to swap the two players in same role to balance out avg rank/elo
+        put a value on each rank/division
+
+MAJOR FIXES 
+    - Finding rank using Riot API does not work if not enough ranked games (esp early in season 2024) - fixed
+    - uses previous ign instead of Riot ign - fixed
+    - penalty to decline - ON HOLD
+
+Update playerinfo since soloq rank can change (therefore mmr changes) - will be once a month
+
+
+
+
+
+
+
+
+
